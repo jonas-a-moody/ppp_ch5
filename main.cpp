@@ -4,6 +4,7 @@ class Token {
 public:
     char kind;                                      // what kind of token
     double value;                                   // for numbers: a value
+    Token() :kind{0}, value{0.0} {}         // ADDED: default constructor
     Token(char k) :kind{k}, value{0.0} {}           // construct from one value
     Token(char k, double v) :kind{k}, value{v} {}   // construct from two values
 }; // end class Token
@@ -28,7 +29,8 @@ Token Token_stream::get() {
         return buffer; 
     }
     char ch = 0;
-
+    std::cin >> ch;
+    if (!std::cin) return Token{'q'}; // ADDED: treat EOF/fail as quit
     switch (ch) {
     case ';':               // for "print"
     case 'q':               // for "quit"
@@ -44,6 +46,7 @@ Token Token_stream::get() {
     }
     default:
         std::cerr << "Bad Token\n"; 
+        return 0; 
     }
 }
 
@@ -64,7 +67,7 @@ double primary() {      // deal with numbers and parentheses
             return t.value; 
         default:
             std::cerr << "Primary expected.\n"; 
-
+            return 0; 
     }
 }
 
@@ -85,7 +88,9 @@ double term() {           // deal with * and /
                 t = ts.get(); 
                 break;
             }
-                
+            default:            // ADDED: default case for fall-through
+                ts.putback(t); 
+                return left;                 
         }
     }
 }
@@ -111,5 +116,22 @@ double expression() {     // deal with + and -
 }
 
 int main() {            //main loop and deal with errors
-
+    double result = 0; 
+    
+    try {
+        while (std::cin) {
+            Token t = ts.get(); 
+            if (t.kind == 'q') return 0; 
+            if (t.kind == ';')
+                std::cout << "= " << result << '\n'; // result from prior expression
+            else {
+                ts.putback(t);
+                result = expression(); 
+            }
+        }
+    }
+    catch (...) {
+        std::cerr << "Exception" << '\n';
+        return 1;
+    }
 } // end main()
